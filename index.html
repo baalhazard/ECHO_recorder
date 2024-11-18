@@ -42,9 +42,15 @@
             alert("Din webbläsare stöder inte nödvändiga API:er för att spela in ljud.");
         }
 
-        let audioContext, mediaRecorder, audioChunks = [], stream;
+        $1
+let recordingStartTime, recordingTimerInterval;
 
-        const startButton = document.getElementById("startButton");
+        const recordingTimer = document.createElement('p');
+recordingTimer.id = 'recordingTimer';
+recordingTimer.textContent = 'Inspelad tid: 0 sekunder';
+statusElement.insertAdjacentElement('afterend', recordingTimer);
+
+$1
         const stopButton = document.getElementById("stopButton");
         const downloadButton = document.getElementById("download");
         const statusElement = document.getElementById("status");
@@ -52,7 +58,9 @@
         startButton.addEventListener("click", startRecording);
         stopButton.addEventListener("click", stopRecording);
 
-        async function startRecording() {
+        $1
+            recordingStartTime = Date.now();
+            recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
             try {
                 updateStatus("Förbereder inspelning...");
                 
@@ -91,7 +99,24 @@
                 source.connect(bandpassFilter);
                 bandpassFilter.connect(audioContext.destination);
 
-                const mimeType = document.getElementById("formatSelect").value === "webm" ? "audio/webm" : "audio/wav";
+                const format = document.getElementById("formatSelect").value;
+                let mimeType;
+                switch (format) {
+                    case "webm":
+                        mimeType = "audio/webm";
+                        break;
+                    case "wav":
+                        mimeType = "audio/wav";
+                        break;
+                    case "mp3":
+                        mimeType = "audio/mpeg";
+                        break;
+                    case "ogg":
+                        mimeType = "audio/ogg";
+                        break;
+                    default:
+                        mimeType = "audio/webm";
+                }
                 mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: parseInt(document.getElementById("bitrateSelect").value) });
 
                 mediaRecorder.ondataavailable = (event) => {
@@ -119,7 +144,9 @@
             }
         }
 
-        function stopRecording() {
+        $1
+            clearInterval(recordingTimerInterval);
+            recordingTimer.textContent = 'Inspelad tid: 0 sekunder';
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 try {
                     mediaRecorder.stop();
@@ -134,7 +161,12 @@
             }
         }
 
-        function updateStatus(message) {
+        function updateRecordingTimer() {
+            const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+            recordingTimer.textContent = `Inspelad tid: ${elapsedSeconds} sekunder`;
+        }
+
+$1
             statusElement.textContent = message;
         }
 
@@ -146,6 +178,6 @@
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.06</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.07</footer>
 </body>
 </html>
