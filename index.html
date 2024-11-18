@@ -118,7 +118,7 @@
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
 
                     // Rensa audioChunks så snart blobben har skapats för att frigöra minne
-                    audioChunks = null;
+                    audioChunks = [];
 
                     const format = document.getElementById("formatSelect").value;
                     let blobToDownload;
@@ -186,6 +186,6 @@
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.05</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.06</footer>
 </body>
 </html>
