@@ -3,7 +3,17 @@ if (!navigator.mediaDevices || !window.AudioContext) {
     alert("Din webbläsare stöder inte nödvändiga API:er för att spela in ljud.");
 }
 
-let audioContext, mediaRecorder, audioChunks = [], downloadButton;
+let audioContext, mediaRecorder, audioChunks = [];
+
+// Hämta knappar och status-element
+const startButton = document.getElementById("startButton");
+const stopButton = document.getElementById("stopButton");
+const downloadButton = document.getElementById("download");
+const statusElement = document.getElementById("status");
+
+// Koppla händelser till knappar
+startButton.addEventListener("click", startRecording);
+stopButton.addEventListener("click", stopRecording);
 
 // Starta ljudinspelning
 async function startRecording() {
@@ -156,7 +166,6 @@ function writeString(view, offset, string) {
 
 // Uppdatera statusmeddelande
 function updateStatus(message) {
-    const statusElement = document.getElementById("status");
     statusElement.textContent = message;
 }
 
@@ -165,4 +174,5 @@ function setupDownloadButton(blob, filename) {
     downloadButton.style.display = "inline-block";
     downloadButton.href = URL.createObjectURL(blob);
     downloadButton.download = filename;
+    downloadButton.textContent = "Ladda ner inspelad fil";
 }
