@@ -13,8 +13,7 @@
     <select id="formatSelect">
         <option value="webm" selected>WebM</option>
         <option value="wav">WAV</option>
-        <option value="mp3">MP3</option>
-        <option value="ogg">OGG</option>
+                <option value="ogg">OGG</option>
     </select>
     <label for="bitrateSelect">Välj bithastighet (kbps):</label>
     <select id="bitrateSelect">
@@ -100,16 +99,18 @@
                     case "wav":
                         mimeType = "audio/wav";
                         break;
-                    case "mp3":
-                        mimeType = "audio/mpeg";
-                        break;
                     case "ogg":
-                        mimeType = "audio/ogg";
+                        mimeType = "audio/ogg; codecs=opus";
                         break;
                     default:
                         mimeType = "audio/webm";
                 }
-                mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: parseInt(document.getElementById("bitrateSelect").value) });
+                if (MediaRecorder.isTypeSupported(mimeType)) {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: parseInt(document.getElementById("bitrateSelect").value) });
+                } else {
+                    alert('Det valda formatet stöds inte av din webbläsare. Prova ett annat format.');
+                    return;
+                }
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
@@ -171,6 +172,6 @@
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.08</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.09</footer>
 </body>
 </html>
