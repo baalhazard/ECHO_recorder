@@ -34,36 +34,28 @@
     <label for="filterQ">Q-faktor:</label>
     <input type="number" id="filterQ" value="1.0">
     <p id="filterRange">Tillåtet frekvensomfång: </p>
+    <p id="recordingTimer">Inspelad tid: 0 sekunder</p>
 
     <script>
-        // ECHO_recorder
-
         if (!navigator.mediaDevices || !window.AudioContext) {
             alert("Din webbläsare stöder inte nödvändiga API:er för att spela in ljud.");
         }
 
-        $1
-let recordingStartTime, recordingTimerInterval;
+        let audioContext, mediaRecorder, audioChunks = [], stream;
+        let recordingStartTime, recordingTimerInterval;
 
-        const recordingTimer = document.createElement('p');
-recordingTimer.id = 'recordingTimer';
-recordingTimer.textContent = 'Inspelad tid: 0 sekunder';
-statusElement.insertAdjacentElement('afterend', recordingTimer);
-
-$1
+        const startButton = document.getElementById("startButton");
         const stopButton = document.getElementById("stopButton");
         const downloadButton = document.getElementById("download");
         const statusElement = document.getElementById("status");
+        const recordingTimer = document.getElementById("recordingTimer");
 
         startButton.addEventListener("click", startRecording);
         stopButton.addEventListener("click", stopRecording);
 
-        $1
-            recordingStartTime = Date.now();
-            recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+        async function startRecording() {
             try {
                 updateStatus("Förbereder inspelning...");
-                
                 stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
                 audioContext = new AudioContext();
 
@@ -74,8 +66,8 @@ $1
                 const filterFrequencyInput = document.getElementById("filterFrequency");
                 const filterQInput = document.getElementById("filterQ");
 
-                bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value) || 2175;
-                bandpassFilter.Q = parseFloat(filterQInput.value) || 0.58;
+                bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value) || 2000;
+                bandpassFilter.Q = parseFloat(filterQInput.value) || 1.0;
 
                 filterFrequencyInput.addEventListener("input", updateFilterSettings);
                 filterQInput.addEventListener("input", updateFilterSettings);
@@ -130,13 +122,14 @@ $1
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
                     audioChunks = [];
 
-                    const format = document.getElementById("formatSelect").value;
                     const filename = `filtered_audio.${format}`;
                     setupDownloadButton(audioBlob, filename);
                     updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                 };
 
                 mediaRecorder.start();
+                recordingStartTime = Date.now();
+                recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
                 updateStatus("Inspelning startad...");
             } catch (error) {
                 console.error("Fel vid inspelning:", error);
@@ -144,7 +137,7 @@ $1
             }
         }
 
-        $1
+        function stopRecording() {
             clearInterval(recordingTimerInterval);
             recordingTimer.textContent = 'Inspelad tid: 0 sekunder';
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -166,7 +159,7 @@ $1
             recordingTimer.textContent = `Inspelad tid: ${elapsedSeconds} sekunder`;
         }
 
-$1
+        function updateStatus(message) {
             statusElement.textContent = message;
         }
 
@@ -178,6 +171,6 @@ $1
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.07</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.08</footer>
 </body>
 </html>
