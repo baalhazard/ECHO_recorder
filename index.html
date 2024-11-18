@@ -57,7 +57,7 @@
                 updateStatus("Förbereder inspelning...");
                 
                 // Be om åtkomst till mikrofonen
-                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
                 audioContext = new AudioContext();
 
                 // Skapa en AudioNode från streamen
@@ -103,7 +103,7 @@
 
                 // Skapa MediaRecorder för att spela in ljud
                 const mimeType = document.getElementById("formatSelect").value === "webm" ? "audio/webm" : "audio/wav";
-                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: parseInt(document.getElementById("bitrateSelect").value) });
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
@@ -118,7 +118,7 @@
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
 
                     // Rensa audioChunks så snart blobben har skapats för att frigöra minne
-                    audioChunks = [];
+                    audioChunks = null;
 
                     const format = document.getElementById("formatSelect").value;
                     let blobToDownload;
@@ -158,7 +158,12 @@
                 try {
                     mediaRecorder.stop();
                     // Stäng mikrofonens ström för att säkerställa att inspelningen avslutas
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach(track => {
+                        track.stop();
+                    });
+                    if (stream.getTracks().every(track => track.readyState === 'ended')) {
+                        console.log("Alla spår har stoppats framgångsrikt.");
+                    }
                     updateStatus("Inspelning stoppad. Vänta medan filen bearbetas...");
                 } catch (error) {
                     console.error("Fel vid stopp av inspelning:", error);
