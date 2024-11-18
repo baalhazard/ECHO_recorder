@@ -10,6 +10,12 @@
     <button id="startButton">Starta inspelning</button>
     <button id="stopButton">Stoppa inspelning</button>
     <label for="formatSelect">Välj filformat:</label>
+    <select id="formatSelect">
+        <option value="wav">WAV</option>
+        <option value="mp3">MP3</option>
+        <option value="ogg">OGG</option>
+        <option value="webm">WebM</option>
+    </select>
     <label for="bitrateSelect">Välj bithastighet (kbps):</label>
     <select id="bitrateSelect">
         <option value="16000">16 kbps</option>
@@ -17,18 +23,12 @@
         <option value="64000">64 kbps</option>
         <option value="128000">128 kbps</option>
     </select>
-    $1
-        <option value="wav">WAV</option>
-        <option value="mp3">MP3</option>
-        <option value="ogg">OGG</option>
-        <option value="webm">WebM</option>
-    </select>
     <a id="download" style="display: none;">Ladda ner inspelad fil</a>
     <p id="status">Klar för inspelning.</p>
     <label for="filterFrequency">Filterfrekvens (Hz):</label>
     <input type="number" id="filterFrequency" value="2000">
     <label for="filterQ">Q-faktor:</label>
-    $1
+    <input type="number" id="filterQ" value="1.0">
     <p id="filterRange">Tillåtet frekvensomfång: </p>
 
     <script>
@@ -43,10 +43,7 @@
 
         // Hämta knappar och status-element
         const startButton = document.getElementById("startButton");
-        const stopButton = document.createElement("button");
-        stopButton.id = "stopButton";
-        stopButton.textContent = "Stoppa inspelning";
-        document.body.insertBefore(stopButton, document.getElementById("download"));
+        const stopButton = document.getElementById("stopButton");
         const downloadButton = document.getElementById("download");
         const statusElement = document.getElementById("status");
 
@@ -80,9 +77,13 @@
 
                 filterFrequencyInput.addEventListener("input", () => {
                     bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value);
+                    updateFilterRange();
                 });
 
-                $1
+                filterQInput.addEventListener("input", () => {
+                    bandpassFilter.Q = parseFloat(filterQInput.value);
+                    updateFilterRange();
+                });
 
                 // Uppdatera frekvensomfångsvisningen baserat på användarinmatning
                 const filterRangeElement = document.getElementById("filterRange");
@@ -94,8 +95,6 @@
                     const maxFreq = frequency + bandwidth / 2;
                     filterRangeElement.textContent = `Tillåtet frekvensomfång: ${minFreq.toFixed(1)} Hz - ${maxFreq.toFixed(1)} Hz`;
                 }
-                filterFrequencyInput.addEventListener("input", updateFilterRange);
-                filterQInput.addEventListener("input", updateFilterRange);
                 updateFilterRange();
 
                 // Koppla filter och ljudkälla
@@ -103,7 +102,8 @@
                 bandpassFilter.connect(audioContext.destination);
 
                 // Skapa MediaRecorder för att spela in ljud
-                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+                const mimeType = document.getElementById("formatSelect").value === "webm" ? "audio/webm" : "audio/wav";
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
@@ -115,40 +115,28 @@
                     updateStatus("Bearbetar ljud...");
                     
                     // Kombinera ljudklippen
-                    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                    const audioBlob = new Blob(audioChunks, { type: mimeType });
 
                     // Rensa audioChunks så snart blobben har skapats för att frigöra minne
                     audioChunks = [];
 
-                    // Konvertera till WAV
-                    try {
-                        const wavBlob = await convertToWav(audioBlob);
-                        const format = document.getElementById("formatSelect").value;
-                        let blobToDownload;
-                        let filename;
+                    const format = document.getElementById("formatSelect").value;
+                    let blobToDownload;
+                    let filename;
 
-                        if (format === "wav") {
-                            blobToDownload = wavBlob;
-                            filename = "filtered_audio.wav";
-                        } else if (format === "mp3") {
-                            // Placeholder for MP3 conversion logic
-                            blobToDownload = wavBlob; // Replace with actual MP3 conversion
-                            filename = "filtered_audio.mp3";
-                        } else if (format === "ogg") {
-                            // Placeholder for OGG conversion logic
-                            blobToDownload = wavBlob; // Replace with actual OGG conversion
-                            filename = "filtered_audio.ogg";
-                        } else if (format === "webm") {
-                            blobToDownload = audioBlob;
-                            filename = "filtered_audio.webm";
-                        }
-
-                        setupDownloadButton(blobToDownload, filename);
-                        updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
-                    } catch (error) {
-                        console.error("Fel vid WAV-konvertering:", error);
-                        updateStatus("Fel uppstod vid bearbetning av ljudet.");
+                    if (format === "wav" || format === "webm") {
+                        blobToDownload = audioBlob;
+                        filename = `filtered_audio.${format}`;
+                    } else if (format === "mp3" || format === "ogg") {
+                        blobToDownload = audioBlob;
+                        filename = `filtered_audio.${format}`;
+                    } else {
+                        blobToDownload = audioBlob;
+                        filename = `filtered_audio.wav`;
                     }
+
+                    setupDownloadButton(blobToDownload, filename);
+                    updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                 };
 
                 mediaRecorder.start();
@@ -179,91 +167,6 @@
             }
         }
 
-        // Konvertera WebM till WAV
-        async function convertToWav(audioBlob) {
-            const arrayBuffer = await audioBlob.arrayBuffer();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-            $1 parseInt(document.getElementById("bitrateSelect").value); // 16 kbps
-            const numChannels = audioBuffer.numberOfChannels;
-            const length = audioBuffer.length * (sampleRate / audioBuffer.sampleRate);
-
-            // Skapa en ny ljudbuffer med rätt inställningar
-            const offlineContext = new OfflineAudioContext(numChannels, length, sampleRate);
-            const bufferSource = offlineContext.createBufferSource();
-            bufferSource.buffer = audioBuffer;
-
-            // Koppla in filtret igen med användarjusterbara inställningar
-            const bandpassFilter = offlineContext.createBiquadFilter();
-            bandpassFilter.type = "bandpass";
-            bandpassFilter.frequency.value = parseFloat(document.getElementById("filterFrequency").value) || 2000;
-            bandpassFilter.Q = parseFloat(document.getElementById("filterQ").value) || 1.0;
-
-            bufferSource.connect(bandpassFilter);
-            bandpassFilter.connect(offlineContext.destination);
-
-            // Rendera och exportera
-            bufferSource.start(0);
-            const renderedBuffer = await offlineContext.startRendering();
-
-            // Skapa WAV-fil
-            return audioBufferToWav(renderedBuffer);
-        }
-
-        // Konvertera AudioBuffer till WAV
-        function audioBufferToWav(buffer) {
-            const numChannels = buffer.numberOfChannels;
-            const sampleRate = buffer.sampleRate;
-            const length = buffer.length * numChannels * 2 + 44;
-            const wav = new ArrayBuffer(length);
-            const view = new DataView(wav);
-
-            // Skapa WAV-header
-            writeString(view, 0, "RIFF");
-            view.setUint32(4, 36 + buffer.length * 2, true);
-            writeString(view, 8, "WAVE");
-            writeString(view, 12, "fmt ");
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numChannels * 2, true);
-            view.setUint16(32, numChannels * 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, "data");
-            view.setUint32(40, buffer.length * numChannels * 2, true);
-
-            // Skriv ljuddata
-            const interleaved = interleave(buffer);
-            let offset = 44;
-            for (let i = 0; i < interleaved.length; i++, offset += 2) {
-                const normalizedSample = Math.max(-1, Math.min(1, interleaved[i])); // Normalisera till [-1, 1]
-                view.setInt16(offset, normalizedSample * 0x7fff, true);
-            }
-
-            return new Blob([view], { type: "audio/wav" });
-        }
-
-        function interleave(buffer) {
-            const numChannels = buffer.numberOfChannels;
-            const length = buffer.length * numChannels;
-            const result = new Float32Array(length);
-
-            let offset = 0;
-            for (let i = 0; i < buffer.length; i++) {
-                for (let j = 0; j < numChannels; j++) {
-                    result[offset++] = buffer.getChannelData(j)[i];
-                }
-            }
-            return result;
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
         // Uppdatera statusmeddelande
         function updateStatus(message) {
             statusElement.textContent = message;
@@ -276,7 +179,8 @@
             downloadButton.download = filename;
             downloadButton.textContent = "Ladda ner inspelad fil";
         }
+
     </script>
-<footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.03</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.04</footer>
 </body>
 </html>
