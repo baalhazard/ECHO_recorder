@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECHO Recorder</title>
+    <script type="module">
+        import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.0/dist/ffmpeg.min.js';
+        window.FFmpeg = { createFFmpeg, fetchFile };
+    </script>
 </head>
 <body>
     <h1>ECHO Recorder</h1>
@@ -118,15 +122,50 @@
                     }
                 };
 
-                mediaRecorder.onstop = () => {
+                mediaRecorder.onstop = async () => {
                     updateStatus("Bearbetar ljud...");
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
                     audioChunks = [];
 
                     const bitrate = parseInt(document.getElementById("bitrateSelect").value) / 1000;
                     const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-                    const filename = `filtered_audio_${elapsedSeconds}s_${bitrate}kbps.${format}`;
-                    setupDownloadButton(audioBlob, filename);
+                    let filename = `filtered_audio_${elapsedSeconds}s_${bitrate}kbps.${format}`;
+
+                    if (format !== 'webm') {
+                        updateStatus(`Konverterar till ${format}...`);
+                    console.log(`Starting conversion to ${format} using ffmpeg.js`);
+                        const ffmpeg = FFmpeg.createFFmpeg({ log: true });
+                        await ffmpeg.load();
+                        const data = await FFmpeg.fetchFile(audioBlob);
+                        await ffmpeg.FS('writeFile', 'input.webm', data);
+
+                        let outputFormat = format;
+                        switch (format) {
+                            case 'wav':
+                                outputFormat = 'output.wav';
+                                break;
+                            case 'ogg':
+                                outputFormat = 'output.ogg';
+                                break;
+                        }
+
+                        try {
+                        await ffmpeg.run('-i', 'input.webm', outputFormat);
+                        console.log(`Conversion to ${format} successful.`);
+                    } catch (error) {
+                        console.error(`Conversion to ${format} failed:`, error);
+                        updateStatus(`Fel vid konvertering till ${format}. Försök igen eller använd ett annat format.`);
+                        return;
+                    }
+                        const outputData = await ffmpeg.FS('readFile', outputFormat);
+                        const outputBlob = new Blob([outputData.buffer], { type: format === 'wav' ? 'audio/wav' : 'audio/ogg' });
+                        filename = `filtered_audio_${elapsedSeconds}s_${bitrate}kbps.${format}`;
+                        setupDownloadButton(outputBlob, filename);
+                    } else {
+                        setupDownloadButton(audioBlob, filename);
+                    }
+
+                    updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                     updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                 };
 
@@ -174,6 +213,6 @@
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.10</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 2.01</footer>
 </body>
 </html>
