@@ -8,7 +8,7 @@
 <body>
     <h1>ECHO Recorder</h1>
     <button id="startButton">Starta inspelning</button>
-    $1
+    <button id="stopButton">Stoppa inspelning</button>
     <label for="formatSelect">Välj filformat:</label>
     <select id="formatSelect">
         <option value="wav">WAV</option>
@@ -35,7 +35,10 @@
 
         // Hämta knappar och status-element
         const startButton = document.getElementById("startButton");
-        const stopButton = document.getElementById("stopButton");
+        const stopButton = document.createElement("button");
+        stopButton.id = "stopButton";
+        stopButton.textContent = "Stoppa inspelning";
+        document.body.insertBefore(stopButton, document.getElementById("download"));
         const downloadButton = document.getElementById("download");
         const statusElement = document.getElementById("status");
 
