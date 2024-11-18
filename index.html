@@ -14,6 +14,7 @@
         <option value="wav">WAV</option>
         <option value="mp3">MP3</option>
         <option value="ogg">OGG</option>
+        <option value="webm">WebM</option>
     </select>
     <a id="download" style="display: none;">Ladda ner inspelad fil</a>
     <p id="status">Klar för inspelning.</p>
@@ -114,6 +115,9 @@
                             // Placeholder for OGG conversion logic
                             blobToDownload = wavBlob; // Replace with actual OGG conversion
                             filename = "filtered_audio.ogg";
+                        } else if (format === "webm") {
+                            blobToDownload = audioBlob;
+                            filename = "filtered_audio.webm";
                         }
 
                         setupDownloadButton(blobToDownload, filename);
@@ -250,6 +254,6 @@
             downloadButton.textContent = "Ladda ner inspelad fil";
         }
     </script>
-<footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.01</footer>
+<footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.02</footer>
 </body>
 </html>
