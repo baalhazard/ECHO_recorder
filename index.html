@@ -24,7 +24,7 @@
             alert("Din webbläsare stöder inte nödvändiga API:er för att spela in ljud.");
         }
 
-        let audioContext, mediaRecorder, audioChunks = [];
+        let audioContext, mediaRecorder, audioChunks = [], stream;
 
         // Hämta knappar och status-element
         const startButton = document.getElementById("startButton");
@@ -42,7 +42,7 @@
                 updateStatus("Förbereder inspelning...");
                 
                 // Be om åtkomst till mikrofonen
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioContext = new AudioContext();
 
                 // Skapa en AudioNode från streamen
@@ -119,6 +119,8 @@
                 }
                 try {
                     mediaRecorder.stop();
+                    // Stäng mikrofonens ström för att säkerställa att inspelningen avslutas
+                    stream.getTracks().forEach(track => track.stop());
                     updateStatus("Inspelning stoppad. Vänta medan filen bearbetas...");
                 } catch (error) {
                     console.error("Fel vid stopp av inspelning:", error);
