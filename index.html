@@ -123,7 +123,9 @@
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
                     audioChunks = [];
 
-                    const filename = `filtered_audio.${format}`;
+                    const bitrate = parseInt(document.getElementById("bitrateSelect").value) / 1000;
+                    const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+                    const filename = `filtered_audio_${elapsedSeconds}s_${bitrate}kbps.${format}`;
                     setupDownloadButton(audioBlob, filename);
                     updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                 };
@@ -172,6 +174,6 @@
         }
 
     </script>
-    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.09</footer>
+    <footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.10</footer>
 </body>
 </html>
