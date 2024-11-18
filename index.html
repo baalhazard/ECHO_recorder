@@ -34,74 +34,59 @@
     <script>
         // ECHO_recorder
 
-        // Kontrollera om webbläsaren stöder nödvändiga API:er
         if (!navigator.mediaDevices || !window.AudioContext) {
             alert("Din webbläsare stöder inte nödvändiga API:er för att spela in ljud.");
         }
 
         let audioContext, mediaRecorder, audioChunks = [], stream;
 
-        // Hämta knappar och status-element
         const startButton = document.getElementById("startButton");
         const stopButton = document.getElementById("stopButton");
         const downloadButton = document.getElementById("download");
         const statusElement = document.getElementById("status");
 
-        // Koppla händelser till knappar
         startButton.addEventListener("click", startRecording);
         stopButton.addEventListener("click", stopRecording);
 
-        // Starta ljudinspelning
         async function startRecording() {
             try {
                 updateStatus("Förbereder inspelning...");
                 
-                // Be om åtkomst till mikrofonen
                 stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
                 audioContext = new AudioContext();
 
-                // Skapa en AudioNode från streamen
                 const source = audioContext.createMediaStreamSource(stream);
-
-                // Skapa ett bandpassfilter med användarjusterbara inställningar
                 const bandpassFilter = audioContext.createBiquadFilter();
                 bandpassFilter.type = "bandpass";
 
-                // Lägg till HTML-inputs för frekvens och Q-faktor
                 const filterFrequencyInput = document.getElementById("filterFrequency");
                 const filterQInput = document.getElementById("filterQ");
 
-                // Uppdatera filterinställningar baserat på användarinmatning
-                bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value) || 2000; // Standardvärde
-                bandpassFilter.Q = parseFloat(filterQInput.value) || 1.0; // Standardvärde
+                bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value) || 2000;
+                bandpassFilter.Q = parseFloat(filterQInput.value) || 1.0;
 
-                filterFrequencyInput.addEventListener("input", () => {
+                filterFrequencyInput.addEventListener("input", updateFilterSettings);
+                filterQInput.addEventListener("input", updateFilterSettings);
+
+                function updateFilterSettings() {
                     bandpassFilter.frequency.value = parseFloat(filterFrequencyInput.value);
-                    updateFilterRange();
-                });
-
-                filterQInput.addEventListener("input", () => {
                     bandpassFilter.Q = parseFloat(filterQInput.value);
                     updateFilterRange();
-                });
+                }
 
-                // Uppdatera frekvensomfångsvisningen baserat på användarinmatning
-                const filterRangeElement = document.getElementById("filterRange");
                 function updateFilterRange() {
                     const frequency = parseFloat(filterFrequencyInput.value);
                     const Q = parseFloat(filterQInput.value);
                     const bandwidth = frequency / Q;
                     const minFreq = Math.max(0, frequency - bandwidth / 2);
                     const maxFreq = frequency + bandwidth / 2;
-                    filterRangeElement.textContent = `Tillåtet frekvensomfång: ${minFreq.toFixed(1)} Hz - ${maxFreq.toFixed(1)} Hz`;
+                    document.getElementById("filterRange").textContent = `Tillåtet frekvensomfång: ${minFreq.toFixed(1)} Hz - ${maxFreq.toFixed(1)} Hz`;
                 }
                 updateFilterRange();
 
-                // Koppla filter och ljudkälla
                 source.connect(bandpassFilter);
                 bandpassFilter.connect(audioContext.destination);
 
-                // Skapa MediaRecorder för att spela in ljud
                 const mimeType = document.getElementById("formatSelect").value === "webm" ? "audio/webm" : "audio/wav";
                 mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: parseInt(document.getElementById("bitrateSelect").value) });
 
@@ -111,31 +96,14 @@
                     }
                 };
 
-                mediaRecorder.onstop = async () => {
+                mediaRecorder.onstop = () => {
                     updateStatus("Bearbetar ljud...");
-                    
-                    // Kombinera ljudklippen
                     const audioBlob = new Blob(audioChunks, { type: mimeType });
-
-                    // Rensa audioChunks så snart blobben har skapats för att frigöra minne
                     audioChunks = [];
 
                     const format = document.getElementById("formatSelect").value;
-                    let blobToDownload;
-                    let filename;
-
-                    if (format === "wav" || format === "webm") {
-                        blobToDownload = audioBlob;
-                        filename = `filtered_audio.${format}`;
-                    } else if (format === "mp3" || format === "ogg") {
-                        blobToDownload = audioBlob;
-                        filename = `filtered_audio.${format}`;
-                    } else {
-                        blobToDownload = audioBlob;
-                        filename = `filtered_audio.wav`;
-                    }
-
-                    setupDownloadButton(blobToDownload, filename);
+                    const filename = `filtered_audio.${format}`;
+                    setupDownloadButton(audioBlob, filename);
                     updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                 };
 
@@ -147,37 +115,25 @@
             }
         }
 
-        // Stoppa ljudinspelning
         function stopRecording() {
-            if (mediaRecorder) {
-                if (mediaRecorder.state === "inactive") {
-                    console.warn("MediaRecorder is already inactive.");
-                    updateStatus("Inspelningen är redan stoppad.");
-                    return;
-                }
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 try {
                     mediaRecorder.stop();
-                    // Stäng mikrofonens ström för att säkerställa att inspelningen avslutas
-                    stream.getTracks().forEach(track => {
-                        track.stop();
-                    });
-                    if (stream.getTracks().every(track => track.readyState === 'ended')) {
-                        console.log("Alla spår har stoppats framgångsrikt.");
-                    }
+                    stream.getTracks().forEach(track => track.stop());
                     updateStatus("Inspelning stoppad. Vänta medan filen bearbetas...");
                 } catch (error) {
                     console.error("Fel vid stopp av inspelning:", error);
                     updateStatus("Fel: kunde inte stoppa inspelningen korrekt.");
                 }
+            } else {
+                updateStatus("Inspelningen är redan stoppad.");
             }
         }
 
-        // Uppdatera statusmeddelande
         function updateStatus(message) {
             statusElement.textContent = message;
         }
 
-        // Ställ in nedladdningsknappen
         function setupDownloadButton(blob, filename) {
             downloadButton.style.display = "inline-block";
             downloadButton.href = URL.createObjectURL(blob);
