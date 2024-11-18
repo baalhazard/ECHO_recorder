@@ -8,7 +8,13 @@
 <body>
     <h1>ECHO Recorder</h1>
     <button id="startButton">Starta inspelning</button>
-    <button id="stopButton">Stoppa inspelning</button>
+    $1
+    <label for="formatSelect">Välj filformat:</label>
+    <select id="formatSelect">
+        <option value="wav">WAV</option>
+        <option value="mp3">MP3</option>
+        <option value="ogg">OGG</option>
+    </select>
     <a id="download" style="display: none;">Ladda ner inspelad fil</a>
     <p id="status">Klar för inspelning.</p>
     <label for="filterFrequency">Filterfrekvens (Hz):</label>
@@ -93,7 +99,24 @@
                     // Konvertera till WAV
                     try {
                         const wavBlob = await convertToWav(audioBlob);
-                        setupDownloadButton(wavBlob, "filtered_audio.wav");
+                        const format = document.getElementById("formatSelect").value;
+                        let blobToDownload;
+                        let filename;
+
+                        if (format === "wav") {
+                            blobToDownload = wavBlob;
+                            filename = "filtered_audio.wav";
+                        } else if (format === "mp3") {
+                            // Placeholder for MP3 conversion logic
+                            blobToDownload = wavBlob; // Replace with actual MP3 conversion
+                            filename = "filtered_audio.mp3";
+                        } else if (format === "ogg") {
+                            // Placeholder for OGG conversion logic
+                            blobToDownload = wavBlob; // Replace with actual OGG conversion
+                            filename = "filtered_audio.ogg";
+                        }
+
+                        setupDownloadButton(blobToDownload, filename);
                         updateStatus("Inspelning klar! Klicka på nedladdningsknappen.");
                     } catch (error) {
                         console.error("Fel vid WAV-konvertering:", error);
@@ -227,6 +250,6 @@
             downloadButton.textContent = "Ladda ner inspelad fil";
         }
     </script>
-<footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.0</footer>
+<footer style="position: fixed; bottom: 10px; right: 10px; font-size: small; color: #777;">Version 1.01</footer>
 </body>
 </html>
